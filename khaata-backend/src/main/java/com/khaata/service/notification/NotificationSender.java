@@ -24,9 +24,9 @@ public interface NotificationSender {
     ReminderChannel channel();
 
     /** Everything a sender might need to reach a customer. */
-    record Recipient(String name, String phone, String telegramChatId) {
+    record Recipient(String name, String phone, String email, String telegramChatId) {
         public static Recipient ofPhone(String phone) {
-            return new Recipient(null, phone, null);
+            return new Recipient(null, phone, null, null);
         }
     }
 

@@ -31,62 +31,59 @@ import org.springframework.stereotype.Service;
 public class ReminderService {
 
     private final DashboardService dashboardService;
-    private final ReminderProcessor reminderProcessor;
     private final ReminderProperties properties;
     private final CustomerRepository customerRepository;
     private final com.khaata.repository.ReminderLogRepository reminderLogRepository;
     private final com.khaata.security.CurrentUser currentUser;
+    private final com.khaata.messaging.ReminderPublisher publisher;
 
     public ReminderService(DashboardService dashboardService,
-                           ReminderProcessor reminderProcessor,
                            ReminderProperties properties,
                            CustomerRepository customerRepository,
                            com.khaata.repository.ReminderLogRepository reminderLogRepository,
-                           com.khaata.security.CurrentUser currentUser) {
+                           com.khaata.security.CurrentUser currentUser,
+                           com.khaata.messaging.ReminderPublisher publisher) {
         this.dashboardService = dashboardService;
-        this.reminderProcessor = reminderProcessor;
         this.properties = properties;
         this.customerRepository = customerRepository;
         this.reminderLogRepository = reminderLogRepository;
         this.currentUser = currentUser;
+        this.publisher = publisher;
     }
 
-    /** Scheduled entry point. Runs for EVERY owner's overdue customers (no user context). */
+    /**
+     * Scheduled producer. Runs for EVERY owner's overdue customers (no user context)
+     * and PUBLISHES a message per customer to the queue — the background consumer sends.
+     */
     @Scheduled(cron = "${khaata.reminders.cron}")
     public void scheduledRun() {
         if (!properties.enabled()) {
             log.debug("Reminders disabled; skipping scheduled run.");
             return;
         }
-        int sent = 0;
+        int queued = 0;
         for (Customer c : dashboardService.allCustomersNeedingReminder()) {
-            if (reminderProcessor.remindOne(c)) {
-                sent++;
-            }
+            publisher.publish(c.getId(), "scheduled-sweep");
+            queued++;
         }
-        log.info("Scheduled reminder run complete. Messages sent: {}", sent);
+        log.info("Scheduled reminder run: {} messages queued.", queued);
     }
 
-    /** Manual "Send Reminders Now" — only the current owner's overdue customers. */
+    /** Manual "Send Reminders Now" — queues the current owner's overdue customers. */
     public int runOnce() {
         List<Customer> targets = dashboardService.customersNeedingReminder();
-        int sent = 0;
         for (Customer c : targets) {
-            if (reminderProcessor.remindOne(c)) {
-                sent++;
-            }
+            publisher.publish(c.getId(), "manual-run");
         }
-        return sent;
+        return targets.size();
     }
 
-    /**
-     * Manually send a reminder to one of the current owner's customers right now,
-     * regardless of overdue status or whether already reminded today.
-     */
+    /** Queue a reminder for one of the current owner's customers (the per-row bell). */
     public boolean remindCustomerNow(Long customerId) {
         Customer customer = customerRepository.findByIdAndOwnerId(customerId, currentUser.id())
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + customerId));
-        return reminderProcessor.remindOne(customer, true);
+        publisher.publish(customer.getId(), "manual-single");
+        return true;
     }
 
     /** Reminder-log entries for only the current owner's customers. */

@@ -72,7 +72,7 @@ public class ReminderProcessor {
         String message = buildMessage(customer, overdue);
 
         NotificationSender.Recipient recipient = new NotificationSender.Recipient(
-                customer.getName(), customer.getPhone(), customer.getTelegramChatId());
+                customer.getName(), customer.getPhone(), customer.getEmail(), customer.getTelegramChatId());
         NotificationSender.SendResult result = notificationSender.send(recipient, message);
 
         reminderLogRepository.save(ReminderLog.builder()

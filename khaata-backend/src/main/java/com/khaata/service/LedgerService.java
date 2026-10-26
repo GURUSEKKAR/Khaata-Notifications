@@ -42,13 +42,16 @@ public class LedgerService {
     private final TransactionRepository transactionRepository;
     private final CustomerRepository customerRepository;
     private final com.khaata.security.CurrentUser currentUser;
+    private final com.khaata.messaging.ReminderPublisher reminderPublisher;
 
     public LedgerService(TransactionRepository transactionRepository,
                          CustomerRepository customerRepository,
-                         com.khaata.security.CurrentUser currentUser) {
+                         com.khaata.security.CurrentUser currentUser,
+                         com.khaata.messaging.ReminderPublisher reminderPublisher) {
         this.transactionRepository = transactionRepository;
         this.customerRepository = customerRepository;
         this.currentUser = currentUser;
+        this.reminderPublisher = reminderPublisher;
     }
 
     /**
@@ -87,6 +90,15 @@ public class LedgerService {
                 .build();
 
         LedgerTransaction saved = transactionRepository.save(txn);
+
+        // Event-driven publish: if this credit is already overdue at creation
+        // (e.g. a backdated entry), enqueue a reminder immediately. Normal future-dated
+        // credit is picked up by the scheduled sweep once it becomes due.
+        if (req.type() == TransactionType.CREDIT && dueDate != null
+                && dueDate.isBefore(LocalDate.now(ZONE))) {
+            reminderPublisher.publish(customerId, "credit-recorded-overdue");
+        }
+
         return toResponse(saved);
     }
 

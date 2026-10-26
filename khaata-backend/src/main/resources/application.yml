@@ -7,6 +7,35 @@
 spring:
   application:
     name: khaata
+  # --- RabbitMQ (message queue) ---
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        # The consumer's retry policy: 3 attempts with exponential backoff, then the
+        # message is dead-lettered (not requeued forever).
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 2s
+          multiplier: 2
+          max-interval: 10s
+        default-requeue-rejected: false
+  # --- Email (Gmail SMTP) ---
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   profiles:
     active: dev
   jpa:
@@ -32,6 +61,8 @@ khaata:
   notification:
     # Overridden per-profile: 'console' in dev, 'whatsapp' in prod.
     channel: console
+  mail:
+    from: ${MAIL_FROM:${MAIL_USERNAME:}}
   security:
     # JWT signing secret. MUST be overridden in prod via env (min 32 chars).
     jwt-secret: ${KHAATA_JWT_SECRET:dev-only-secret-change-me-in-production-1234567890}

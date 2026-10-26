@@ -8,6 +8,13 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  rabbitmq:
+    # No broker in unit tests — don't start listeners or try to connect.
+    # The ConnectionFactory bean still exists (connection is lazy); only the
+    # listener container would connect eagerly, and auto-startup=false stops it.
+    listener:
+      simple:
+        auto-startup: false
 
 khaata:
   reminders:
