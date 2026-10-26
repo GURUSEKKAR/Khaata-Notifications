@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "khaata.queue.enabled", havingValue = "true", matchIfMissing = true)
 public class ReminderConsumer {
 
     private final CustomerRepository customerRepository;

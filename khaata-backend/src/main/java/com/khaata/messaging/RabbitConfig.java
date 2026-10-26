@@ -27,6 +27,8 @@ import org.springframework.context.annotation.Configuration;
  * JSON-serialized so the consumer receives a typed {@link ReminderMessage}.
  */
 @Configuration
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+        name = "khaata.queue.enabled", havingValue = "true", matchIfMissing = true)
 public class RabbitConfig {
 
     public static final String EXCHANGE = "khaata.reminders.exchange";

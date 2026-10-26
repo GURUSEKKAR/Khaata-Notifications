@@ -50,6 +50,10 @@ spring:
 khaata:
   # Seed sample customers (Guru, Gopi, etc.) on first run. Off by default.
   seed-demo-data: ${KHAATA_SEED_DEMO_DATA:false}
+  # Message queue (RabbitMQ). When true, reminders go through the queue + consumer.
+  # When false, the publisher falls back to sending directly (no broker needed).
+  queue:
+    enabled: ${KHAATA_QUEUE_ENABLED:true}
   # Comma-separated allowed CORS origins (the frontend URL). Supports wildcards,
   # e.g. https://*.vercel.app for Vercel preview deployments.
   cors:
