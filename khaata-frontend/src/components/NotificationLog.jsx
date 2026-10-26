@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Bell, ChevronDown, ChevronUp } from 'lucide-react';
 import { api, formatDateTime } from '../api';
 
-// Shows the history of reminders the app has sent to customers — who, when, which
-// channel, and whether it succeeded (with the failure reason when it didn't).
 export default function NotificationLog({ refreshKey, customers }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,72 +19,45 @@ export default function NotificationLog({ refreshKey, customers }) {
     return () => { cancelled = true; };
   }, [refreshKey]);
 
-  const channelBadge = (ch) => {
-    const map = {
-      WHATSAPP: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-      SMS: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
-      TELEGRAM: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
-      CONSOLE: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-    };
-    return map[ch] || map.CONSOLE;
-  };
+  const badgeClass = (ch) => ({
+    WHATSAPP: 'badge badge-paid', SMS: 'badge', TELEGRAM: 'badge badge-credit', CONSOLE: 'badge',
+  }[ch] || 'badge');
 
   return (
-    <div className="animate-in rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between"
-      >
-        <h2 className="flex items-center gap-2 font-semibold text-slate-700 dark:text-slate-200">
-          <span>🔔 Notification Log</span>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-300">
-            {entries.length}
-          </span>
-        </h2>
-        <span className="text-slate-400">{open ? '▲' : '▼'}</span>
+    <div className="card animate-in">
+      <button onClick={() => setOpen((o) => !o)}
+        style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--text)', padding: 0 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, fontSize: 15 }}>
+          <Bell size={16} className="icon" /> Notification Log
+          <span className="badge">{entries.length}</span>
+        </span>
+        {open ? <ChevronUp size={16} className="icon" /> : <ChevronDown size={16} className="icon" />}
       </button>
 
       {open && (
-        <div className="mt-3">
-          {loading && <p className="py-4 text-center text-sm text-slate-400">Loading…</p>}
+        <div style={{ marginTop: 12 }}>
+          {loading && <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px 0' }}>Loading…</p>}
           {!loading && entries.length === 0 && (
-            <p className="py-4 text-center text-sm text-slate-400">
-              No reminders sent yet. Click “Send Reminders Now” or a customer’s “Remind”.
+            <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '12px 0', fontSize: 13 }}>
+              No reminders sent yet. Click “Send Reminders Now” or a customer’s bell.
             </p>
           )}
           {!loading && entries.length > 0 && (
-            <ul className="max-h-64 space-y-2 overflow-y-auto pr-1">
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto' }}>
               {entries.map((e) => {
                 const ok = e.status === 'SENT';
                 return (
-                  <li
-                    key={e.id}
-                    className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900/40"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-slate-700 dark:text-slate-200">
-                          {nameById[e.customerId] || `Customer #${e.customerId}`}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${channelBadge(e.channel)}`}>
-                          {e.channel}
-                        </span>
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                          ok
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                            : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
-                        }`}
-                      >
-                        {e.status}
+                  <li key={e.id} style={{ border: '1px solid var(--border)', borderRadius: 12, background: 'var(--raised)', padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600 }}>{nameById[e.customerId] || `Customer #${e.customerId}`}</span>
+                        <span className={badgeClass(e.channel)}>{e.channel}</span>
                       </span>
+                      <span className={ok ? 'badge badge-paid' : 'badge badge-overdue'}>{e.status}</span>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{e.message}</p>
-                    {!ok && e.detail && (
-                      <p className="mt-1 text-[11px] text-rose-500">{e.detail}</p>
-                    )}
-                    <p className="mt-1 text-[11px] text-slate-400">{formatDateTime(e.createdAt)}</p>
+                    <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--muted)' }}>{e.message}</p>
+                    {!ok && e.detail && <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--overdue)' }}>{e.detail}</p>}
+                    <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--disabled)' }}>{formatDateTime(e.createdAt)}</p>
                   </li>
                 );
               })}

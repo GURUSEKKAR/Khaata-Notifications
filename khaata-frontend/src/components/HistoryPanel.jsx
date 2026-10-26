@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, rupee, formatDateTime } from '../api';
 
-// Full credit/repayment history for the selected customer, each row with its
-// running balance — the digital version of a khaata page.
 export default function HistoryPanel({ customer, refreshKey }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -22,63 +20,50 @@ export default function HistoryPanel({ customer, refreshKey }) {
 
   if (!customer) return null;
 
+  const th = { padding: '8px 12px 8px 0', textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--muted)', borderBottom: '1px solid var(--border)' };
+  const td = { padding: '10px 12px 10px 0', borderBottom: '1px solid var(--border)', color: 'var(--text)' };
+
   return (
-    <div className="animate-in rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-semibold text-slate-700 dark:text-slate-200">
-          {customer.name}'s Credit History
-        </h2>
-        <span className="text-xs text-slate-400">{customer.phone}</span>
+    <div className="card animate-in">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>{customer.name}'s Credit History</h2>
+        <span style={{ fontSize: 12, color: 'var(--muted)' }}>{customer.phone}</span>
       </div>
 
-      {loading && <p className="py-6 text-center text-sm text-slate-400">Loading history…</p>}
-      {error && <p className="py-6 text-center text-sm text-rose-500">{error}</p>}
-
+      {loading && <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '20px 0' }}>Loading history…</p>}
+      {error && <p style={{ textAlign: 'center', color: 'var(--overdue)', padding: '20px 0' }}>{error}</p>}
       {!loading && !error && entries.length === 0 && (
-        <p className="py-6 text-center text-sm text-slate-400">No transactions yet for {customer.name}.</p>
+        <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '20px 0' }}>No transactions yet for {customer.name}.</p>
       )}
 
       {!loading && !error && entries.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700">
-                <th className="py-2 pr-3">Date</th>
-                <th className="py-2 pr-3">Type</th>
-                <th className="py-2 pr-3">Note</th>
-                <th className="py-2 pr-3 text-right">Amount</th>
-                <th className="py-2 pl-3 text-right">Balance</th>
+              <tr>
+                <th style={th}>Date</th><th style={th}>Type</th><th style={th}>Note</th>
+                <th style={{ ...th, textAlign: 'right' }}>Amount</th>
+                <th style={{ ...th, textAlign: 'right', paddingRight: 0 }}>Balance</th>
               </tr>
             </thead>
             <tbody>
               {entries.map((e) => {
                 const isCredit = e.type === 'CREDIT';
                 return (
-                  <tr key={e.id} className="border-b border-slate-50 last:border-0 dark:border-slate-700/50">
-                    <td className="py-2 pr-3 text-slate-500 dark:text-slate-400">{formatDateTime(e.createdAt)}</td>
-                    <td className="py-2 pr-3">
-                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                        isCredit ? 'bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300'
-                                 : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
-                        {isCredit ? 'CREDIT' : 'REPAID'}
-                      </span>
-                      {e.overdue && (
-                        <span className="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                          OVERDUE
-                        </span>
-                      )}
+                  <tr key={e.id}>
+                    <td style={{ ...td, color: 'var(--muted)' }}>{formatDateTime(e.createdAt)}</td>
+                    <td style={td}>
+                      <span className={isCredit ? 'badge badge-credit' : 'badge badge-paid'}>{isCredit ? 'CREDIT' : 'REPAID'}</span>
+                      {e.overdue && <span className="badge badge-overdue" style={{ marginLeft: 4 }}>OVERDUE</span>}
                     </td>
-                    <td className="py-2 pr-3 text-slate-500 dark:text-slate-400">
+                    <td style={{ ...td, color: 'var(--muted)' }}>
                       {e.note || '—'}
-                      {isCredit && e.dueDate && (
-                        <span className="block text-[11px] text-slate-400">due {e.dueDate}</span>
-                      )}
+                      {isCredit && e.dueDate && <span style={{ display: 'block', fontSize: 11, color: 'var(--disabled)' }}>due {e.dueDate}</span>}
                     </td>
-                    <td className={`py-2 pr-3 text-right font-medium ${
-                      isCredit ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    <td style={{ ...td, textAlign: 'right', fontWeight: 600, color: isCredit ? 'var(--owed)' : 'var(--paid)', fontVariantNumeric: 'tabular-nums' }}>
                       {isCredit ? '+' : '−'}{rupee(e.amount)}
                     </td>
-                    <td className="py-2 pl-3 text-right font-semibold text-slate-700 dark:text-slate-200">
+                    <td style={{ ...td, textAlign: 'right', paddingRight: 0, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                       {rupee(e.runningBalance)}
                     </td>
                   </tr>
