@@ -1,0 +1,22 @@
+# Test profile: in-memory H2, console sender, seeder disabled (tests seed their own data).
+spring:
+  datasource:
+    url: jdbc:h2:mem:khaata_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+khaata:
+  reminders:
+    enabled: false
+    cron: "0 0 10 * * *"
+  notification:
+    channel: console
+  security:
+    jwt-secret: test-secret-key-for-unit-tests-1234567890abcd
+    jwt-expiry-minutes: 60
+    owner-username: owner
+    owner-password: khaata123

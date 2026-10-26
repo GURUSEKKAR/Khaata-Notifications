@@ -1,0 +1,19 @@
+# Just the database, for local development against a real (containerized) Postgres
+# while you run the Spring Boot app from your IDE/terminal.
+#   docker compose -f docker-compose.db.yml up -d
+# Then run the backend with the 'devpg' profile:
+#   SPRING_PROFILES_ACTIVE=devpg mvn spring-boot:run
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: khaata
+      POSTGRES_USER: khaata
+      POSTGRES_PASSWORD: khaata
+    ports:
+      - "5432:5432"
+    volumes:
+      - khaata_pgdata_dev:/var/lib/postgresql/data
+
+volumes:
+  khaata_pgdata_dev:

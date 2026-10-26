@@ -1,0 +1,63 @@
+import { useState } from 'react';
+import { api } from '../api';
+
+const field =
+  'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-800 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100';
+
+export default function NewCustomerModal({ open, onClose, onCreated, onError }) {
+  const [form, setForm] = useState({
+    name: '', phone: '', email: '', customerType: 'NORMAL', dueWindowDays: '', telegramChatId: '',
+  });
+  const [busy, setBusy] = useState(false);
+
+  if (!open) return null;
+  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await api.createCustomer({
+        name: form.name,
+        phone: form.phone,
+        email: form.email || null,
+        customerType: form.customerType,
+        dueWindowDays: form.dueWindowDays ? Number(form.dueWindowDays) : null,
+        telegramChatId: form.telegramChatId || null,
+      });
+      setForm({ name: '', phone: '', email: '', customerType: 'NORMAL', dueWindowDays: '', telegramChatId: '' });
+      onCreated('Customer added.');
+    } catch (err) {
+      onError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-10 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div className="animate-in w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-800">
+        <h3 className="mb-4 text-lg font-semibold text-slate-800 dark:text-slate-100">New Customer</h3>
+        <form onSubmit={submit} className="grid gap-3">
+          <input required placeholder="Name" value={form.name} onChange={set('name')} className={field} />
+          <input required placeholder="Phone (+91…)" value={form.phone} onChange={set('phone')} className={field} />
+          <input placeholder="Email (optional)" value={form.email} onChange={set('email')} className={field} />
+          <input placeholder="Telegram chat ID (optional)" value={form.telegramChatId} onChange={set('telegramChatId')} className={field} />
+          <div className="grid grid-cols-2 gap-3">
+            <select value={form.customerType} onChange={set('customerType')} className={field}>
+              <option value="NORMAL">Normal (7 days)</option>
+              <option value="REGULAR">Regular (30 days)</option>
+            </select>
+            <input type="number" min="1" placeholder="Due days (optional)" value={form.dueWindowDays} onChange={set('dueWindowDays')} className={field} />
+          </div>
+          <div className="mt-2 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700">Cancel</button>
+            <button type="submit" disabled={busy} className="rounded-xl bg-brand-500 px-4 py-2 font-medium text-white hover:bg-brand-600 disabled:opacity-60">
+              {busy ? 'Saving…' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

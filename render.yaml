@@ -1,0 +1,51 @@
+# Render Blueprint: Spring Boot backend + managed Postgres.
+# In the Render dashboard: New + -> Blueprint -> point it at this repo.
+# Render reads this file and creates both services. You still set the secret
+# env vars (JWT secret, Telegram token/chat id) in the dashboard.
+services:
+  - type: web
+    name: khaata-backend
+    runtime: docker
+    dockerfilePath: ./khaata-backend/Dockerfile
+    dockerContext: ./khaata-backend
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Database connection pulled from the managed Postgres below.
+      - key: DB_URL
+        fromDatabase:
+          name: khaata-db
+          property: connectionString   # jdbc URL form provided by Render
+      - key: DB_USERNAME
+        fromDatabase:
+          name: khaata-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: khaata-db
+          property: password
+      # Auth — generate a strong JWT secret automatically.
+      - key: KHAATA_JWT_SECRET
+        generateValue: true
+      - key: KHAATA_OWNER_USERNAME
+        sync: false        # set in dashboard
+      - key: KHAATA_OWNER_PASSWORD
+        sync: false        # set in dashboard
+      # Frontend origin for CORS (your Vercel URL) — set in dashboard.
+      - key: KHAATA_CORS_ALLOWED_ORIGINS
+        sync: false
+      # Notification channel + Telegram — set in dashboard.
+      - key: KHAATA_NOTIFICATION_CHANNEL
+        value: telegram
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_DEFAULT_CHAT_ID
+        sync: false
+
+databases:
+  - name: khaata-db
+    plan: free
+    databaseName: khaata
+    user: khaata

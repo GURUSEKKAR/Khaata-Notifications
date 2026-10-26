@@ -1,0 +1,11 @@
+target/
+*.class
+.mvn/
+!.mvn/wrapper/maven-wrapper.properties
+*.log
+.DS_Store
+.idea/
+*.iml
+
+# Secrets — never commit
+.env

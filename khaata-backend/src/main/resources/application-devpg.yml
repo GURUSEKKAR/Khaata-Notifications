@@ -1,0 +1,19 @@
+# Dev-against-Postgres profile: real containerized DB + console reminders + seed data.
+# Use with docker-compose.db.yml. Gives you a persistent database locally without
+# needing the full prod WhatsApp setup.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/khaata
+    username: khaata
+    password: khaata
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+khaata:
+  notification:
+    channel: ${KHAATA_NOTIFICATION_CHANNEL:console}

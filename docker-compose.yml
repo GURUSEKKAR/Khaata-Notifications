@@ -1,0 +1,46 @@
+# One command to run Khaata in prod mode: Postgres + the Spring Boot app.
+#   docker compose up --build
+# The app uses the 'prod' profile (Postgres + WhatsApp sender). Set the WhatsApp
+# vars below to enable real delivery; leave them blank to deploy without it.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: khaata
+      POSTGRES_USER: khaata
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-khaata}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Named volume => data survives `docker compose down` and restarts.
+      - khaata_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U khaata"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: ./khaata-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/khaata
+      DB_USERNAME: khaata
+      DB_PASSWORD: ${DB_PASSWORD:-khaata}
+      # --- Auth: JWT secret + seeded owner login (CHANGE THESE IN PROD) ---
+      KHAATA_JWT_SECRET: ${KHAATA_JWT_SECRET:-change-me-to-a-long-random-secret-at-least-32-chars}
+      KHAATA_OWNER_USERNAME: ${KHAATA_OWNER_USERNAME:-owner}
+      KHAATA_OWNER_PASSWORD: ${KHAATA_OWNER_PASSWORD:-khaata123}
+      # --- WhatsApp Cloud API (fill in to enable real delivery) ---
+      WHATSAPP_PHONE_NUMBER_ID: ""
+      WHATSAPP_ACCESS_TOKEN: ""
+      WHATSAPP_TEMPLATE_NAME: "khaata_reminder"
+      WHATSAPP_TEMPLATE_LANG: "en"
+    ports:
+      - "8080:8080"
+
+volumes:
+  khaata_pgdata:

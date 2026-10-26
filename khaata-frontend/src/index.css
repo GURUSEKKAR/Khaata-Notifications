@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #0f172a;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light (default) and dark app backgrounds, applied via the .dark class on <html>. */
+.app-bg {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, #dbeafe 0%, transparent 55%),
+    radial-gradient(900px 500px at -10% 110%, #e0e7ff 0%, transparent 50%),
+    #f1f5f9;
+  min-height: 100%;
+}
+.dark .app-bg {
+  background:
+    radial-gradient(1200px 600px at 100% -10%, #1e293b 0%, transparent 55%),
+    radial-gradient(900px 500px at -10% 110%, #172554 0%, transparent 50%),
+    #0b1120;
+  min-height: 100%;
+}
+.dark body { color: #e2e8f0; }
+
+/* Subtle card entrance animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeInUp 0.25s ease both; }
+
+/* Thin, unobtrusive scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.35); border-radius: 8px; }

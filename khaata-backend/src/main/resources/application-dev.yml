@@ -1,0 +1,19 @@
+# Dev profile: zero external setup. H2 in-memory DB + console reminders.
+# Run the app and everything works end-to-end with no accounts.
+spring:
+  datasource:
+    url: jdbc:h2:mem:khaata;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+khaata:
+  notification:
+    channel: ${KHAATA_NOTIFICATION_CHANNEL:console}

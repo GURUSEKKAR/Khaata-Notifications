@@ -1,0 +1,92 @@
+# ---------------------------------------------------------------------------
+# Shared configuration. Profile-specific files (application-dev.yml /
+# application-prod.yml) override the datasource and the notification channel.
+# This is the 12-factor "config in the environment" principle: the SAME jar
+# runs in dev and prod, only the active profile differs.
+# ---------------------------------------------------------------------------
+spring:
+  application:
+    name: khaata
+  profiles:
+    active: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate   # Flyway owns the schema; Hibernate only validates.
+    properties:
+      hibernate:
+        format_sql: true
+
+# Reminder engine tuning (read by ReminderProperties)
+khaata:
+  # Seed sample customers (Guru, Gopi, etc.) on first run. Off by default.
+  seed-demo-data: ${KHAATA_SEED_DEMO_DATA:false}
+  # Comma-separated allowed CORS origins (the frontend URL). Supports wildcards,
+  # e.g. https://*.vercel.app for Vercel preview deployments.
+  cors:
+    allowed-origins: ${KHAATA_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  reminders:
+    enabled: true
+    # Cron: every day at 10:00 AM. The owner's customers get chased in the morning.
+    cron: "0 0 10 * * *"
+  notification:
+    # Overridden per-profile: 'console' in dev, 'whatsapp' in prod.
+    channel: console
+  security:
+    # JWT signing secret. MUST be overridden in prod via env (min 32 chars).
+    jwt-secret: ${KHAATA_JWT_SECRET:dev-only-secret-change-me-in-production-1234567890}
+    jwt-expiry-minutes: ${KHAATA_JWT_EXPIRY_MINUTES:720}
+    # Default owner login seeded on first run. Override in prod.
+    owner-username: ${KHAATA_OWNER_USERNAME:owner}
+    owner-password: ${KHAATA_OWNER_PASSWORD:khaata123}
+    owner-display-name: ${KHAATA_OWNER_DISPLAY_NAME:Shop Owner}
+
+# WhatsApp Cloud API settings (only used when channel=whatsapp).
+whatsapp:
+  api-url: https://graph.facebook.com/v20.0
+  phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+  access-token: ${WHATSAPP_ACCESS_TOKEN:}
+  template-name: ${WHATSAPP_TEMPLATE_NAME:khaata_reminder}
+  template-lang: ${WHATSAPP_TEMPLATE_LANG:en}
+
+# Twilio settings (used when khaata.notification.channel=twilio).
+# mode = sms  -> sends from twilio.sms-from
+# mode = whatsapp -> sends from twilio.whatsapp-from (sandbox number)
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  mode: ${TWILIO_MODE:whatsapp}
+  sms-from: ${TWILIO_SMS_FROM:}
+  whatsapp-from: ${TWILIO_WHATSAPP_FROM:whatsapp:+14155238886}
+
+# Telegram bot settings (used when khaata.notification.channel=telegram).
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
+  default-chat-id: ${TELEGRAM_DEFAULT_CHAT_ID:}
+
+# Resilience4j: protect the write path from a flaky WhatsApp API.
+resilience4j:
+  retry:
+    instances:
+      whatsapp:
+        max-attempts: 3
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+  circuitbreaker:
+    instances:
+      whatsapp:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
