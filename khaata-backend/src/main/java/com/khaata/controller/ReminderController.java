@@ -1,7 +1,6 @@
 package com.khaata.controller;
 
 import com.khaata.entity.ReminderLog;
-import com.khaata.repository.ReminderLogRepository;
 import com.khaata.service.ReminderService;
 import java.util.List;
 import java.util.Map;
@@ -19,12 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReminderController {
 
     private final ReminderService reminderService;
-    private final ReminderLogRepository reminderLogRepository;
 
-    public ReminderController(ReminderService reminderService,
-                              ReminderLogRepository reminderLogRepository) {
+    public ReminderController(ReminderService reminderService) {
         this.reminderService = reminderService;
-        this.reminderLogRepository = reminderLogRepository;
     }
 
     /** Trigger a reminder run immediately. Returns how many messages were sent. */
@@ -41,9 +37,9 @@ public class ReminderController {
         return Map.of("sent", sent);
     }
 
-    /** Most recent reminder attempts (audit trail). */
+    /** Most recent reminder attempts for the current owner's customers. */
     @GetMapping("/log")
     public List<ReminderLog> recentLog() {
-        return reminderLogRepository.findTop100ByOrderByCreatedAtDesc();
+        return reminderService.ownerLog();
     }
 }

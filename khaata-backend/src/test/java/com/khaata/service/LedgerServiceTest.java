@@ -11,15 +11,21 @@ import com.khaata.entity.TransactionType;
 import com.khaata.exception.BusinessRuleException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Integration tests for the ledger math — the most important thing to get right.
- * Runs against the in-memory H2 DB with the dev profile disabled-seeder path
- * (we create our own customers here).
+ * Runs against the in-memory H2 DB. Each test authenticates as the seeded 'owner'
+ * so the owner-scoped services accept the writes.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -29,6 +35,19 @@ class LedgerServiceTest {
     CustomerService customerService;
     @Autowired
     LedgerService ledgerService;
+
+    @BeforeEach
+    void authenticateAsOwner() {
+        // OwnerSeeder creates the 'owner' account on startup; act as that owner.
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("owner", null,
+                        List.of(new SimpleGrantedAuthority("ROLE_OWNER"))));
+    }
+
+    @AfterEach
+    void clearAuth() {
+        SecurityContextHolder.clearContext();
+    }
 
     private CustomerResponse newCustomer(String phone) {
         return customerService.create(new CreateCustomerRequest(

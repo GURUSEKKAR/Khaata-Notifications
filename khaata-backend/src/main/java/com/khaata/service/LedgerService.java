@@ -41,21 +41,24 @@ public class LedgerService {
 
     private final TransactionRepository transactionRepository;
     private final CustomerRepository customerRepository;
+    private final com.khaata.security.CurrentUser currentUser;
 
     public LedgerService(TransactionRepository transactionRepository,
-                         CustomerRepository customerRepository) {
+                         CustomerRepository customerRepository,
+                         com.khaata.security.CurrentUser currentUser) {
         this.transactionRepository = transactionRepository;
         this.customerRepository = customerRepository;
+        this.currentUser = currentUser;
     }
 
     /**
-     * Record a CREDIT or REPAYMENT for a customer.
+     * Record a CREDIT or REPAYMENT for a customer the current owner owns.
      * For a REPAYMENT, v1 rejects any amount that exceeds the current outstanding
      * (no advance credit) — a deliberate, simple business rule.
      */
     @Transactional
     public TransactionResponse record(Long customerId, CreateTransactionRequest req) {
-        Customer customer = customerRepository.findById(customerId)
+        Customer customer = customerRepository.findByIdAndOwnerId(customerId, currentUser.id())
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + customerId));
 
         if (req.type() == TransactionType.REPAYMENT) {
@@ -89,7 +92,7 @@ public class LedgerService {
 
     @Transactional(readOnly = true)
     public List<TransactionResponse> history(Long customerId) {
-        if (!customerRepository.existsById(customerId)) {
+        if (customerRepository.findByIdAndOwnerId(customerId, currentUser.id()).isEmpty()) {
             throw new NotFoundException("Customer not found: " + customerId);
         }
         return transactionRepository.findByCustomerIdOrderByCreatedAtDesc(customerId)
@@ -108,7 +111,7 @@ public class LedgerService {
      */
     @Transactional(readOnly = true)
     public List<LedgerEntryResponse> historyWithBalance(Long customerId) {
-        if (!customerRepository.existsById(customerId)) {
+        if (customerRepository.findByIdAndOwnerId(customerId, currentUser.id()).isEmpty()) {
             throw new NotFoundException("Customer not found: " + customerId);
         }
         LocalDate today = LocalDate.now(ZONE);

@@ -34,29 +34,40 @@ public class ReminderService {
     private final ReminderProcessor reminderProcessor;
     private final ReminderProperties properties;
     private final CustomerRepository customerRepository;
+    private final com.khaata.repository.ReminderLogRepository reminderLogRepository;
+    private final com.khaata.security.CurrentUser currentUser;
 
     public ReminderService(DashboardService dashboardService,
                            ReminderProcessor reminderProcessor,
                            ReminderProperties properties,
-                           CustomerRepository customerRepository) {
+                           CustomerRepository customerRepository,
+                           com.khaata.repository.ReminderLogRepository reminderLogRepository,
+                           com.khaata.security.CurrentUser currentUser) {
         this.dashboardService = dashboardService;
         this.reminderProcessor = reminderProcessor;
         this.properties = properties;
         this.customerRepository = customerRepository;
+        this.reminderLogRepository = reminderLogRepository;
+        this.currentUser = currentUser;
     }
 
-    /** Scheduled entry point. Cron is configurable ({@code khaata.reminders.cron}). */
+    /** Scheduled entry point. Runs for EVERY owner's overdue customers (no user context). */
     @Scheduled(cron = "${khaata.reminders.cron}")
     public void scheduledRun() {
         if (!properties.enabled()) {
             log.debug("Reminders disabled; skipping scheduled run.");
             return;
         }
-        int sent = runOnce();
-        log.info("Reminder run complete. Messages sent: {}", sent);
+        int sent = 0;
+        for (Customer c : dashboardService.allCustomersNeedingReminder()) {
+            if (reminderProcessor.remindOne(c)) {
+                sent++;
+            }
+        }
+        log.info("Scheduled reminder run complete. Messages sent: {}", sent);
     }
 
-    /** Process all overdue customers once. Returns the number of reminders sent. */
+    /** Manual "Send Reminders Now" — only the current owner's overdue customers. */
     public int runOnce() {
         List<Customer> targets = dashboardService.customersNeedingReminder();
         int sent = 0;
@@ -69,12 +80,21 @@ public class ReminderService {
     }
 
     /**
-     * Manually send a reminder to one customer right now, regardless of whether they
-     * are overdue or already reminded today. Powers the per-customer "Remind now" button.
+     * Manually send a reminder to one of the current owner's customers right now,
+     * regardless of overdue status or whether already reminded today.
      */
     public boolean remindCustomerNow(Long customerId) {
-        Customer customer = customerRepository.findById(customerId)
+        Customer customer = customerRepository.findByIdAndOwnerId(customerId, currentUser.id())
                 .orElseThrow(() -> new NotFoundException("Customer not found: " + customerId));
         return reminderProcessor.remindOne(customer, true);
+    }
+
+    /** Reminder-log entries for only the current owner's customers. */
+    public List<com.khaata.entity.ReminderLog> ownerLog() {
+        java.util.Set<Long> myCustomerIds = customerRepository.findByOwnerId(currentUser.id())
+                .stream().map(Customer::getId).collect(java.util.stream.Collectors.toSet());
+        return reminderLogRepository.findTop100ByOrderByCreatedAtDesc().stream()
+                .filter(r -> myCustomerIds.contains(r.getCustomerId()))
+                .toList();
     }
 }

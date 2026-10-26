@@ -10,6 +10,7 @@ import com.khaata.exception.NotFoundException;
 import com.khaata.repository.CustomerRepository;
 import com.khaata.repository.ReminderLogRepository;
 import com.khaata.repository.TransactionRepository;
+import com.khaata.security.CurrentUser;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Comparator;
@@ -18,14 +19,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Customer management plus assembly of the customer-with-balances view used by
- * the right-hand dashboard list. Delegates all money math to {@link LedgerService}
- * so there is a single source of truth for balances.
+ * Customer management. Every operation is scoped to the currently authenticated
+ * owner, so each shopkeeper only sees and manages their own customers.
  */
 @Service
 public class CustomerService {
 
-    /** Default credit windows by customer type (days). */
     private static final int REGULAR_WINDOW = 30;
     private static final int NORMAL_WINDOW = 7;
 
@@ -33,27 +32,30 @@ public class CustomerService {
     private final LedgerService ledgerService;
     private final TransactionRepository transactionRepository;
     private final ReminderLogRepository reminderLogRepository;
+    private final CurrentUser currentUser;
 
     public CustomerService(CustomerRepository customerRepository,
                            LedgerService ledgerService,
                            TransactionRepository transactionRepository,
-                           ReminderLogRepository reminderLogRepository) {
+                           ReminderLogRepository reminderLogRepository,
+                           CurrentUser currentUser) {
         this.customerRepository = customerRepository;
         this.ledgerService = ledgerService;
         this.transactionRepository = transactionRepository;
         this.reminderLogRepository = reminderLogRepository;
+        this.currentUser = currentUser;
     }
 
     @Transactional
     public CustomerResponse create(CreateCustomerRequest req) {
-        if (customerRepository.existsByPhone(req.phone())) {
+        Long ownerId = currentUser.id();
+        if (customerRepository.existsByOwnerIdAndPhone(ownerId, req.phone().trim())) {
             throw new BusinessRuleException("A customer with phone " + req.phone() + " already exists.");
         }
-        int window = req.dueWindowDays() != null
-                ? req.dueWindowDays()
-                : defaultWindow(req.customerType());
+        int window = req.dueWindowDays() != null ? req.dueWindowDays() : defaultWindow(req.customerType());
 
         Customer customer = Customer.builder()
+                .ownerId(ownerId)
                 .name(req.name().trim())
                 .phone(req.phone().trim())
                 .email(req.email() != null ? req.email().trim() : null)
@@ -69,20 +71,15 @@ public class CustomerService {
 
     @Transactional(readOnly = true)
     public CustomerResponse get(Long id) {
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Customer not found: " + id));
-        return toResponse(customer);
+        return toResponse(requireOwned(id));
     }
 
-    /** Update a customer's editable details. Phone must stay unique. */
     @Transactional
     public CustomerResponse update(Long id, UpdateCustomerRequest req) {
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Customer not found: " + id));
-
+        Customer customer = requireOwned(id);
         String newPhone = req.phone().trim();
         if (!newPhone.equals(customer.getPhone())
-                && customerRepository.existsByPhone(newPhone)) {
+                && customerRepository.existsByOwnerIdAndPhone(customer.getOwnerId(), newPhone)) {
             throw new BusinessRuleException("Another customer already uses phone " + newPhone + ".");
         }
 
@@ -90,49 +87,42 @@ public class CustomerService {
         customer.setPhone(newPhone);
         customer.setEmail(req.email() != null && !req.email().isBlank() ? req.email().trim() : null);
         customer.setCustomerType(req.customerType());
-        customer.setDueWindowDays(req.dueWindowDays() != null
-                ? req.dueWindowDays()
-                : defaultWindow(req.customerType()));
+        customer.setDueWindowDays(req.dueWindowDays() != null ? req.dueWindowDays() : defaultWindow(req.customerType()));
         customer.setTelegramChatId(blankToNull(req.telegramChatId()));
 
         return toResponse(customerRepository.save(customer));
     }
 
-    /**
-     * Delete a customer and all their ledger/reminder history.
-     *
-     * <p>Business rule: a customer who still owes money cannot be deleted — you must
-     * not accidentally erase an outstanding debt. The caller (controller) is
-     * responsible for having verified the owner's password before invoking this.
-     */
     @Transactional
     public void delete(Long id) {
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Customer not found: " + id));
-
+        Customer customer = requireOwned(id);
         BigDecimal outstanding = ledgerService.outstanding(id);
         if (outstanding.compareTo(BigDecimal.ZERO) > 0) {
             throw new BusinessRuleException(
                     "Cannot delete %s — they still owe ₹%s. Clear the balance first."
                             .formatted(customer.getName(), outstanding.toPlainString()));
         }
-
-        // Remove dependent rows first (no FK cascade configured), then the customer.
         reminderLogRepository.deleteByCustomerId(id);
         transactionRepository.deleteByCustomerId(id);
         customerRepository.delete(customer);
     }
 
-    /**
-     * All customers with their derived balances, sorted by who owes the most
-     * (most important to chase first) — handy for the dashboard list.
-     */
+    /** All of the current owner's customers, with balances, biggest debt first. */
     @Transactional(readOnly = true)
     public List<CustomerResponse> listWithBalances() {
-        return customerRepository.findAll().stream()
+        return customerRepository.findByOwnerId(currentUser.id()).stream()
                 .map(this::toResponse)
                 .sorted(Comparator.comparing(CustomerResponse::outstanding).reversed())
                 .toList();
+    }
+
+    /**
+     * Fetch a customer by id, but only if it belongs to the current owner.
+     * A customer owned by someone else returns 404 — you can't see or touch it.
+     */
+    private Customer requireOwned(Long id) {
+        return customerRepository.findByIdAndOwnerId(id, currentUser.id())
+                .orElseThrow(() -> new NotFoundException("Customer not found: " + id));
     }
 
     private int defaultWindow(CustomerType type) {

@@ -39,10 +39,14 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** The owner (app_user) this customer belongs to — enforces per-shop separation. */
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
+
     @Column(nullable = false, length = 120)
     private String name;
 
-    @Column(nullable = false, length = 20, unique = true)
+    @Column(nullable = false, length = 20)
     private String phone;
 
     @Column(length = 160)
