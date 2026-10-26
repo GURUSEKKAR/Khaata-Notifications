@@ -98,6 +98,22 @@ export const api = {
 
   getReminderLog: () =>
     fetch(`${BASE}/reminders/log`, { headers: authHeaders() }).then(handle),
+
+  getProfile: () => fetch(`${BASE}/profile`, { headers: authHeaders() }).then(handle),
+
+  updateProfile: (payload) =>
+    fetch(`${BASE}/profile`, {
+      method: 'PUT',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(payload),
+    }).then(handle),
+
+  deleteAccount: (password) =>
+    fetch(`${BASE}/profile`, {
+      method: 'DELETE',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ password }),
+    }).then(handle),
 };
 
 export const rupee = (n) =>

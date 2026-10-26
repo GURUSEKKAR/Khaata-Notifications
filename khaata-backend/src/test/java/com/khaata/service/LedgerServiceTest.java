@@ -38,9 +38,10 @@ class LedgerServiceTest {
 
     @BeforeEach
     void authenticateAsOwner() {
-        // OwnerSeeder creates the 'owner' account on startup; act as that owner.
+        // OwnerSeeder creates a shop 'TestShop' on startup; its login key is the
+        // normalized shop name. Act as that owner for the owner-scoped services.
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("owner", null,
+                new UsernamePasswordAuthenticationToken("testshop", null,
                         List.of(new SimpleGrantedAuthority("ROLE_OWNER"))));
     }
 

@@ -31,13 +31,16 @@ public class ReminderProcessor {
     private final LedgerService ledgerService;
     private final ReminderLogRepository reminderLogRepository;
     private final NotificationSender notificationSender;
+    private final com.khaata.repository.AppUserRepository userRepository;
 
     public ReminderProcessor(LedgerService ledgerService,
                              ReminderLogRepository reminderLogRepository,
-                             NotificationSender notificationSender) {
+                             NotificationSender notificationSender,
+                             com.khaata.repository.AppUserRepository userRepository) {
         this.ledgerService = ledgerService;
         this.reminderLogRepository = reminderLogRepository;
         this.notificationSender = notificationSender;
+        this.userRepository = userRepository;
     }
 
     /** @return true if a reminder was actually sent. */
@@ -69,10 +72,13 @@ public class ReminderProcessor {
         }
 
         BigDecimal overdue = ledgerService.overdue(customer.getId());
-        String message = buildMessage(customer, overdue);
+        com.khaata.entity.AppUser owner = userRepository.findById(customer.getOwnerId()).orElse(null);
+        String shopName = owner != null ? owner.getShopName() : "our shop";
+        String message = buildMessage(customer, overdue, owner);
 
         NotificationSender.Recipient recipient = new NotificationSender.Recipient(
-                customer.getName(), customer.getPhone(), customer.getEmail(), customer.getTelegramChatId());
+                customer.getName(), customer.getPhone(), customer.getEmail(),
+                customer.getTelegramChatId(), shopName);
         NotificationSender.SendResult result = notificationSender.send(recipient, message);
 
         reminderLogRepository.save(ReminderLog.builder()
@@ -88,8 +94,25 @@ public class ReminderProcessor {
         return result.success();
     }
 
-    private String buildMessage(Customer customer, BigDecimal overdue) {
-        return "Namaste %s, this is a friendly reminder from your shop. You have an overdue balance of Rs. %s. Please repay at your earliest convenience. Dhanyavaad."
-                .formatted(customer.getName(), overdue.toPlainString());
+    private String buildMessage(Customer customer, BigDecimal overdue, com.khaata.entity.AppUser owner) {
+        String shopName = owner != null ? owner.getShopName() : "our shop";
+        String ownerName = owner != null ? owner.getOwnerName() : "The owner";
+        String upiId = owner != null ? owner.getUpiId() : null;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Dear ").append(customer.getName()).append(",\n\n");
+        sb.append("This is a respectful reminder from ").append(shopName).append(". ");
+        sb.append("As per our records, you have a pending balance of Rs. ")
+          .append(overdue.toPlainString()).append(" on your khaata with us.\n\n");
+        sb.append("We kindly request you to clear it at your convenience.");
+        if (upiId != null && !upiId.isBlank()) {
+            sb.append(" You can pay quickly via UPI to:\n")
+              .append("    UPI ID: ").append(upiId).append("\n");
+        }
+        sb.append("\nThank you for your continued trust.\n\n");
+        sb.append("Warm regards,\n");
+        sb.append(ownerName).append("\n");
+        sb.append(shopName);
+        return sb.toString();
     }
 }

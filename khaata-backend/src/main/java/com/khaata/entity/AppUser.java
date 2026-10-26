@@ -31,6 +31,7 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Login key — the normalized shop name. Unique across all shops. */
     @Column(nullable = false, unique = true, length = 60)
     private String username;
 
@@ -39,6 +40,24 @@ public class AppUser {
 
     @Column(name = "display_name", length = 120)
     private String displayName;
+
+    /** The shop's name (brand shown in reminder emails). Required. */
+    @Column(name = "shop_name", nullable = false, length = 120)
+    private String shopName;
+
+    /** The person who owns/runs the shop. Required. */
+    @Column(name = "owner_name", nullable = false, length = 120)
+    private String ownerName;
+
+    /** Owner contact + payment details, set on the profile page. */
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 160)
+    private String email;
+
+    @Column(name = "upi_id", length = 80)
+    private String upiId;
 
     @Column(nullable = false, length = 20)
     private String role;

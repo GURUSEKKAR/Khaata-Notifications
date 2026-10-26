@@ -1,8 +1,8 @@
 package com.khaata.dto;
 
-/** Returned on successful login: the JWT plus a little display info. */
+/** Returned on successful login/signup: the JWT plus shop display info. */
 public record LoginResponse(
         String token,
-        String username,
-        String displayName
+        String shopName,
+        String ownerName
 ) {}

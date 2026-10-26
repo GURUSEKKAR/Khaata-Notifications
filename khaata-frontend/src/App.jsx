@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, LogOut, UserCog } from 'lucide-react';
 import { api, auth } from './api';
 import ActionPanel from './components/ActionPanel';
 import SummaryBoxes from './components/SummaryBoxes';
@@ -9,6 +9,7 @@ import EditCustomerModal from './components/EditCustomerModal';
 import DeleteCustomerModal from './components/DeleteCustomerModal';
 import HistoryPanel from './components/HistoryPanel';
 import NotificationLog from './components/NotificationLog';
+import ProfileModal from './components/ProfileModal';
 import Login from './components/Login';
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [logKey, setLogKey] = useState(0);
   const [remindBusy, setRemindBusy] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const onUnauthorized = () => setLoggedIn(false);
@@ -75,7 +77,7 @@ export default function App() {
   }
 
   if (!loggedIn) {
-    return <Login onLoggedIn={(u) => { setLoggedIn(true); flash(`Welcome, ${u.displayName || u.username}.`); }} />;
+    return <Login onLoggedIn={(u) => { setLoggedIn(true); flash(`Welcome, ${u.ownerName || u.shopName}.`); }} />;
   }
 
   return (
@@ -95,6 +97,7 @@ export default function App() {
               className={`btn btn-outline ${anyOverdue ? 'alert' : ''} ${remindBusy ? 'is-loading' : ''}`}>
               <Bell size={16} /> Send Reminders Now
             </button>
+            <button onClick={() => setProfileOpen(true)} className="btn btn-ghost"><UserCog size={16} /> Profile</button>
             <button onClick={logout} className="btn btn-ghost"><LogOut size={16} /> Logout</button>
           </div>
         </header>
@@ -137,6 +140,11 @@ export default function App() {
       <DeleteCustomerModal customer={deleteCustomer} onClose={() => setDeleteCustomer(null)}
         onDeleted={async (msg) => { const id = deleteCustomer?.id; setDeleteCustomer(null); if (id === selectedId) setSelectedId(null); await afterChange(msg); }}
         onError={() => {}} />
+
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)}
+        onSaved={(msg) => { setProfileOpen(false); flash(msg); }}
+        onError={(m) => flash(m, 'error')}
+        onDeleted={() => { setProfileOpen(false); setLoggedIn(false); flash('Account deleted.'); }} />
 
       {toast && (
         <div className="animate-in" style={{

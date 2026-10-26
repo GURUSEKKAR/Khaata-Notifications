@@ -8,13 +8,14 @@ import com.khaata.exception.BusinessRuleException;
 import com.khaata.repository.AppUserRepository;
 import com.khaata.security.JwtService;
 import java.time.Instant;
+import java.util.Locale;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Verifies credentials against the stored BCrypt hash and issues a JWT.
- * A generic failure message avoids leaking whether the username exists.
+ * Signup/login for shop accounts. The shop name is the login identifier (stored
+ * normalized in {@code username}), so it must be unique. Passwords are BCrypt-hashed.
  */
 @Service
 public class AuthService {
@@ -31,45 +32,42 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest req) {
-        AppUser user = userRepository.findByUsername(req.username().trim())
-                .orElseThrow(() -> new BusinessRuleException("Invalid username or password."));
-
-        if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
-            throw new BusinessRuleException("Invalid username or password.");
-        }
-
-        String token = jwtService.issue(user.getUsername());
-        return new LoginResponse(token, user.getUsername(), user.getDisplayName());
+    /** Normalize a shop name into the login key (lowercase, trimmed, single spaces). */
+    public static String toUsername(String shopName) {
+        return shopName.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
     }
 
-    /**
-     * Open registration: creates a new owner account and logs them in immediately.
-     * Usernames are unique; the password is stored only as a BCrypt hash.
-     */
     @Transactional
     public LoginResponse register(RegisterRequest req) {
-        String username = req.username().trim();
+        String username = toUsername(req.shopName());
         if (userRepository.existsByUsername(username)) {
-            throw new BusinessRuleException("Username '" + username + "' is already taken.");
+            throw new BusinessRuleException("A shop named '" + req.shopName().trim() + "' already exists. Choose another name.");
         }
-
         AppUser user = AppUser.builder()
                 .username(username)
+                .shopName(req.shopName().trim())
+                .ownerName(req.ownerName().trim())
+                .displayName(req.shopName().trim())
                 .passwordHash(passwordEncoder.encode(req.password()))
-                .displayName(req.displayName() != null && !req.displayName().isBlank()
-                        ? req.displayName().trim() : username)
                 .role("OWNER")
                 .createdAt(Instant.now())
                 .build();
         userRepository.save(user);
-
-        String token = jwtService.issue(user.getUsername());
-        return new LoginResponse(token, user.getUsername(), user.getDisplayName());
+        return new LoginResponse(jwtService.issue(username), user.getShopName(), user.getOwnerName());
     }
 
-    /** Verify a raw password against a stored user's hash (used to confirm sensitive actions). */
+    @Transactional(readOnly = true)
+    public LoginResponse login(LoginRequest req) {
+        String username = toUsername(req.shopName());
+        AppUser user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new BusinessRuleException("Invalid shop name or password."));
+        if (!passwordEncoder.matches(req.password(), user.getPasswordHash())) {
+            throw new BusinessRuleException("Invalid shop name or password.");
+        }
+        return new LoginResponse(jwtService.issue(username), user.getShopName(), user.getOwnerName());
+    }
+
+    /** Verify a raw password against the stored user's hash (for sensitive actions). */
     @Transactional(readOnly = true)
     public boolean verifyPassword(String username, String rawPassword) {
         return userRepository.findByUsername(username)

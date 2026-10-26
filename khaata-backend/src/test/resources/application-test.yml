@@ -27,3 +27,4 @@ khaata:
     jwt-expiry-minutes: 60
     owner-username: owner
     owner-password: khaata123
+    owner-display-name: TestShop

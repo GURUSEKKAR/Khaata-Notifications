@@ -40,16 +40,21 @@ public class OwnerSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.existsByUsername(username)) {
+        // 'username' is the normalized shop name used as the login key.
+        String shopName = displayName != null && !displayName.isBlank() ? displayName : username;
+        String loginKey = com.khaata.service.AuthService.toUsername(shopName);
+        if (userRepository.existsByUsername(loginKey)) {
             return;
         }
         userRepository.save(AppUser.builder()
-                .username(username)
+                .username(loginKey)
+                .shopName(shopName)
+                .ownerName(displayName != null && !displayName.isBlank() ? displayName : "Shop Owner")
+                .displayName(shopName)
                 .passwordHash(passwordEncoder.encode(password))
-                .displayName(displayName)
                 .role("OWNER")
                 .createdAt(Instant.now())
                 .build());
-        log.info("Seeded owner account '{}'. Change the default password in production.", username);
+        log.info("Seeded shop '{}' (login with this shop name). Change the default password in production.", shopName);
     }
 }

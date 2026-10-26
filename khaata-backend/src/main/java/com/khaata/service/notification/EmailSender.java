@@ -39,7 +39,9 @@ public class EmailSender implements NotificationSender {
                 mail.setFrom(from);
             }
             mail.setTo(recipient.email());
-            mail.setSubject("Payment reminder from your shop");
+            String shop = recipient.shopName() != null && !recipient.shopName().isBlank()
+                    ? recipient.shopName() : "your shop";
+            mail.setSubject("Payment reminder from " + shop);
             mail.setText(message);
             mailSender.send(mail);
             log.info("Email reminder sent to {}", recipient.email());
