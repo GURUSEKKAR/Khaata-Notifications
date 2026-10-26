@@ -8,8 +8,7 @@ export default function CustomerList({ customers, selectedId, onSelect, onAddNew
     <aside className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-700">
         <h2 className="font-semibold text-slate-700 dark:text-slate-200">Customers</h2>
-        <button onClick={onAddNew}
-          className="rounded-lg bg-brand-500 px-3 py-1 text-sm font-medium text-white shadow-sm hover:bg-brand-600">
+        <button onClick={onAddNew} className="btn" style={{ minHeight: '34px', padding: '0 14px', fontSize: '14px' }}>
           + New
         </button>
       </div>

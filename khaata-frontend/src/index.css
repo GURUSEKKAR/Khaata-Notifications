@@ -40,3 +40,72 @@ body {
 /* Thin, unobtrusive scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.35); border-radius: 8px; }
+
+/* ===========================================================================
+   Button system. Each button's color signals the action (blue=primary,
+   amber=credit, emerald=repay, rose=danger). Theme-aware via CSS variables.
+   =========================================================================== */
+:root {
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --paid: #059669;   /* used by quick-amount chips */
+}
+.dark {
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+  --paid: #34d399;
+}
+
+.btn {
+  --c: #5B8CFF; --on: #fff;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 20px; border: 0; border-radius: 12px;
+  font: 600 15px/1 Inter, system-ui, sans-serif; letter-spacing: .2px;
+  color: var(--on); background: var(--c); cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.08);
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, var(--c) 60%, transparent); }
+.btn:active { transform: scale(.97); box-shadow: none; }
+.btn:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; }
+.btn:disabled { opacity: .45; pointer-events: none; }
+
+/* variants */
+.btn-credit  { --c: #F5A524; --on: #2B1A00; }
+.btn-success { --c: #059669; --on: #ffffff; }
+.btn-danger  { --c: #FB5C7C; --on: #2B0612; }
+
+.btn-outline { background: transparent; color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--border); }
+.btn-outline:hover { background: color-mix(in srgb, var(--c) 10%, transparent);
+  box-shadow: inset 0 0 0 1.5px var(--c); filter: none; }
+
+.btn-ghost { background: transparent; color: var(--muted); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--text); box-shadow: none; filter: none; }
+
+/* icon button: 44px square */
+.btn-icon { min-height: 44px; min-width: 44px; padding: 0; border-radius: 12px; }
+
+/* quick-amount chips */
+.chip { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 0;
+  font-weight: 600; color: var(--paid); cursor: pointer;
+  background: color-mix(in srgb, var(--paid) 14%, transparent);
+  transition: background .15s, transform .15s; }
+.chip:hover { background: color-mix(in srgb, var(--paid) 26%, transparent); }
+.chip:active { transform: scale(.95); }
+
+/* loading state: add "is-loading" while a request runs */
+.btn.is-loading { color: transparent; position: relative; pointer-events: none; }
+.btn.is-loading::after { content: ""; position: absolute; width: 18px; height: 18px;
+  border: 2px solid var(--on); border-top-color: transparent;
+  border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .chip { transition: none; }
+  .btn.is-loading::after { animation-duration: 2s; }
+  .animate-in { animation: none; }
+}

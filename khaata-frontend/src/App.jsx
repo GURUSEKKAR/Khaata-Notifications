@@ -23,6 +23,7 @@ export default function App() {
   const [deleteCustomer, setDeleteCustomer] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [logKey, setLogKey] = useState(0);
+  const [remindBusy, setRemindBusy] = useState(false);
 
   useEffect(() => {
     const onUnauthorized = () => setLoggedIn(false);
@@ -62,6 +63,7 @@ export default function App() {
   }
 
   async function runReminders() {
+    setRemindBusy(true);
     try {
       const res = await api.runReminders();
       flash(`Reminders run — ${res.sent} message(s) sent.`, 'success');
@@ -69,6 +71,8 @@ export default function App() {
       await load();
     } catch (err) {
       flash(err.message, 'error');
+    } finally {
+      setRemindBusy(false);
     }
   }
 
@@ -101,16 +105,14 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={toggle}
-              className="rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-sm font-medium text-slate-600 shadow-sm backdrop-blur hover:bg-white dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-200">
+            <button onClick={toggle} aria-label="Toggle theme" className="btn btn-ghost btn-icon">
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
-            <button onClick={runReminders}
-              className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-700 dark:bg-brand-600 dark:hover:bg-brand-500">
+            <button onClick={runReminders} disabled={remindBusy}
+              className={`btn btn-danger ${remindBusy ? 'is-loading' : ''}`}>
               Send Reminders Now
             </button>
-            <button onClick={logout}
-              className="rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-sm font-medium text-slate-600 shadow-sm backdrop-blur hover:bg-white dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-200">
+            <button onClick={logout} className="btn btn-ghost">
               Logout
             </button>
           </div>
@@ -128,7 +130,9 @@ export default function App() {
               <>
                 <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-4 py-2 text-sm text-slate-500 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400">
                   <span>Viewing <span className="font-semibold text-slate-700 dark:text-slate-200">{selected.name}</span>'s khaata.</span>
-                  <button onClick={() => setSelectedId(null)} className="text-brand-500 hover:underline dark:text-brand-300">Show shop-wide totals</button>
+                  <button onClick={() => setSelectedId(null)} className="btn btn-outline" style={{ minHeight: '36px', padding: '0 14px', fontSize: '13px' }}>
+                    Show shop-wide totals
+                  </button>
                 </div>
                 <HistoryPanel customer={selected} refreshKey={refreshKey} />
               </>

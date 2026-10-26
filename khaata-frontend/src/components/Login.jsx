@@ -38,9 +38,8 @@ export default function Login({ onLoggedIn, theme, onToggleTheme }) {
 
   return (
     <div className="app-bg flex h-full items-center justify-center p-4">
-      <button onClick={onToggleTheme}
-        className="absolute right-4 top-4 rounded-full border border-slate-200 bg-white/70 px-3 py-1.5 text-sm shadow-sm backdrop-blur dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-200">
-        {theme === 'dark' ? '☀️ Light' : '🌙 Dark'}
+      <button onClick={onToggleTheme} aria-label="Toggle theme" className="btn btn-ghost btn-icon absolute right-4 top-4">
+        {theme === 'dark' ? '☀️' : '🌙'}
       </button>
 
       <div className="animate-in w-full max-w-sm rounded-2xl border border-slate-200 bg-white/90 p-8 shadow-xl backdrop-blur dark:border-slate-700 dark:bg-slate-800/90">
@@ -74,8 +73,8 @@ export default function Login({ onLoggedIn, theme, onToggleTheme }) {
           {error && <div className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-900/30 dark:text-rose-300">{error}</div>}
 
           <button type="submit" disabled={busy}
-            className="mt-2 rounded-xl bg-brand-500 px-4 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-600 disabled:opacity-60">
-            {busy ? 'Please wait…' : isSignup ? 'Create Account' : 'Sign In'}
+            className={`btn mt-2 w-full ${busy ? 'is-loading' : ''}`}>
+            {isSignup ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 

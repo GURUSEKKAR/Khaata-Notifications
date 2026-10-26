@@ -60,9 +60,9 @@ export default function DeleteCustomerModal({ customer, onClose, onDeleted, onEr
           {error && <div className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-900/30 dark:text-rose-300">{error}</div>}
 
           <div className="mt-2 flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="rounded-xl px-4 py-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700">Cancel</button>
-            <button type="submit" disabled={busy || !password} className="rounded-xl bg-rose-500 px-4 py-2 font-medium text-white hover:bg-rose-600 disabled:opacity-60">
-              {busy ? 'Deleting…' : 'Delete Customer'}
+            <button type="button" onClick={onClose} className="btn btn-ghost">Cancel</button>
+            <button type="submit" disabled={busy || !password} className={`btn btn-danger ${busy ? 'is-loading' : ''}`}>
+              Delete Customer
             </button>
           </div>
         </form>
