@@ -30,6 +30,7 @@ public class ReminderConsumer {
                             ReminderProcessor reminderProcessor) {
         this.customerRepository = customerRepository;
         this.reminderProcessor = reminderProcessor;
+        log.info("ReminderConsumer initialized — listening on queue '{}'", RabbitConfig.QUEUE);
     }
 
     @RabbitListener(queues = RabbitConfig.QUEUE)

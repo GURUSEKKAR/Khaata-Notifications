@@ -22,7 +22,9 @@ spring:
     addresses: ${RABBITMQ_URL:}
     listener:
       simple:
-        auto-startup: ${KHAATA_QUEUE_ENABLED:false}
+        # Start the consumer whenever a broker is configured. (The whole messaging
+        # layer is already gated by khaata.queue.enabled via @ConditionalOnProperty.)
+        auto-startup: true
         retry:
           enabled: true
           max-attempts: 3
