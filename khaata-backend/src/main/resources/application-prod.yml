@@ -32,18 +32,21 @@ spring:
           multiplier: 2
           max-interval: 10s
         default-requeue-rejected: false
-  # Email (Gmail SMTP) in prod.
+  # Email (Gmail SMTP). Port 465 (SSL) — many cloud hosts block 587 (STARTTLS).
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
+    port: ${MAIL_PORT:465}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
+          ssl:
             enable: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 khaata:
   # Turn the message queue on in prod by setting KHAATA_QUEUE_ENABLED=true
