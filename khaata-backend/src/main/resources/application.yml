@@ -121,6 +121,14 @@ management:
     web:
       exposure:
         include: health,info,metrics
+  health:
+    # The SMTP health probe can hang for ~60s and slow startup / health checks.
+    # Disable it; mail failures surface in the reminder log instead.
+    mail:
+      enabled: false
+    # Don't let a RabbitMQ blip flip the whole service to DOWN on the host's health check.
+    rabbit:
+      enabled: false
 
 springdoc:
   swagger-ui:
