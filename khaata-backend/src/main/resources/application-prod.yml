@@ -54,7 +54,8 @@ khaata:
   queue:
     enabled: ${KHAATA_QUEUE_ENABLED:false}
   notification:
-    # Set via env in prod: console | email | telegram | twilio. Defaults to email.
-    channel: ${KHAATA_NOTIFICATION_CHANNEL:email}
+    # Set via env in prod: console | email | resend | telegram | twilio.
+    # 'resend' (HTTP email) is the default because Render blocks SMTP ports.
+    channel: ${KHAATA_NOTIFICATION_CHANNEL:resend}
   mail:
     from: ${MAIL_FROM:${MAIL_USERNAME:}}

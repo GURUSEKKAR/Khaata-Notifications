@@ -102,6 +102,12 @@ telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN:}
   default-chat-id: ${TELEGRAM_DEFAULT_CHAT_ID:}
 
+# Resend HTTP email API (used when khaata.notification.channel=resend).
+# Works on cloud hosts that block SMTP (Render), since it sends over HTTPS.
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from: ${RESEND_FROM:Khaata <onboarding@resend.dev>}
+
 # Resilience4j: protect the write path from a flaky WhatsApp API.
 resilience4j:
   retry:
